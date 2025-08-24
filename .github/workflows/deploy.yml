@@ -2,13 +2,13 @@ name: Deploy GAS (pnpm)
 
 on:
   push:
-    branches: [ main ]   # ajuste se usar outra branch
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +26,7 @@ jobs:
       - name: Install dev deps
         run: pnpm i --frozen-lockfile=false
 
-      # grava o token de login do clasp (precisa estar em CLASPRC_JSON)
+      # grava tokens do clasp (seu secret CLASPRC_JSON)
       - name: Write clasp tokens
         shell: bash
         run: |
@@ -34,22 +34,33 @@ jobs:
           ${{ secrets.CLASPRC_JSON }}
           JSON
 
-      - name: Sanity check ~/.clasprc.json
-        run: |
-          node -e "const fs=require('fs');const p=process.env.HOME+'/.clasprc.json';const s=fs.readFileSync(p,'utf8');JSON.parse(s);console.log('OK .clasprc.json');"
-
-      # .clasp.json precisa estar commitado com scriptId + rootDir
       - name: Build (esbuild → dist/)
         run: pnpm run build
 
-      - name: Push code to Apps Script
+      - name: Push to Apps Script
         run: pnpm exec clasp push
 
-      - name: Create new version
-        run: pnpm exec clasp version "CI ${GITHUB_SHA}"
+      - name: Read version from package.json
+        id: pkg
+        run: echo "VER=$(node -p 'require(\"./package.json\").version')" >> $GITHUB_OUTPUT
 
-      - name: Deploy Web App
-        run: pnpm exec clasp deploy --description "CI deploy ${GITHUB_SHA}"
+      # decide destino: main/tag -> PROD, develop -> STAGING
+      - name: Choose deployment target
+        id: target
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" || "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "DEPLOY_ID=${{ secrets.GAS_DEPLOYMENT_ID_PROD }}" >> $GITHUB_OUTPUT
+            echo "CHANNEL=prod" >> $GITHUB_OUTPUT
+          else
+            echo "DEPLOY_ID=${{ secrets.GAS_DEPLOYMENT_ID_STAGING }}" >> $GITHUB_OUTPUT
+            echo "CHANNEL=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create version v${{ steps.pkg.outputs.VER }}
+        run: pnpm exec clasp version "v${{ steps.pkg.outputs.VER }}"
+
+      - name: Deploy Web App (update same URL)
+        run: pnpm exec clasp deploy --deploymentId "${{ steps.target.outputs.DEPLOY_ID }}" --description "v${{ steps.pkg.outputs.VER }} (${{ steps.target.outputs.CHANNEL }})"
 
       - name: Show deployments (debug)
         run: pnpm exec clasp deployments || true
