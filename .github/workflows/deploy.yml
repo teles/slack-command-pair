@@ -2,15 +2,12 @@ name: Deploy GAS (pnpm)
 
 on:
   push:
-    branches: [ main ]     # ajuste para sua branch
-    # tags:
-    #   - 'v*'
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -28,19 +25,14 @@ jobs:
       - name: Install dev deps
         run: pnpm i --frozen-lockfile=false
 
-      - name: Write Service Account key
+      # >>> usa os tokens do seu login local
+      - name: Write clasp tokens
         shell: bash
         run: |
-            cat > sa.json <<'JSON'
-            ${{ secrets.GAS_SERVICE_ACCOUNT }}
-            JSON
+          mkdir -p ~/.clasprc && true
+          echo "${{ secrets.CLASPRC_JSON }}" > ~/.clasprc.json
 
-      - name: Sanity check JSON
-        run: node -e "console.log(require('./sa.json').client_email)"
-
-      - name: Login clasp (Service Account)
-        run: pnpm exec clasp login --creds sa.json
-
+      # .clasp.json DEVE estar commitado com scriptId e rootDir
       - name: Push code to Apps Script
         run: pnpm exec clasp push
 
