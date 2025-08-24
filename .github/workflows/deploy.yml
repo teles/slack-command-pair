@@ -2,12 +2,13 @@ name: Deploy GAS (pnpm)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ]   # ajuste se usar outra branch
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -25,14 +26,19 @@ jobs:
       - name: Install dev deps
         run: pnpm i --frozen-lockfile=false
 
-      # >>> usa os tokens do seu login local
+      # grava o token de login do clasp (precisa estar em CLASPRC_JSON)
       - name: Write clasp tokens
         shell: bash
         run: |
-          mkdir -p ~/.clasprc && true
-          echo "${{ secrets.CLASPRC_JSON }}" > ~/.clasprc.json
+          cat > "$HOME/.clasprc.json" <<'JSON'
+          ${{ secrets.CLASPRC_JSON }}
+          JSON
 
-      # .clasp.json DEVE estar commitado com scriptId e rootDir
+      - name: Sanity check ~/.clasprc.json
+        run: |
+          node -e "const fs=require('fs');const p=process.env.HOME+'/.clasprc.json';const s=fs.readFileSync(p,'utf8');JSON.parse(s);console.log('OK .clasprc.json');"
+
+      # .clasp.json precisa estar commitado com scriptId + rootDir
       - name: Push code to Apps Script
         run: pnpm exec clasp push
 
