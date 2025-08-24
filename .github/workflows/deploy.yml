@@ -1,0 +1,57 @@
+name: Deploy GAS (pnpm)
+
+on:
+  push:
+    branches: [ main ]     # ajuste para sua branch
+    # tags:
+    #   - 'v*'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dev deps
+        run: pnpm i --frozen-lockfile=false
+
+      - name: Write Service Account key
+        run: echo "${{ secrets.GAS_SERVICE_ACCOUNT }}" > sa.json
+
+      - name: Login clasp (Service Account)
+        run: pnpm exec clasp login --creds sa.json
+
+      # Se seu repo NÃO tem .clasp.json commitado, descomente o bloco abaixo
+      # - name: Create .clasp.json on the fly
+      #   run: |
+      #     cat > .clasp.json << 'JSON'
+      #     {
+      #       "scriptId": "SEU_SCRIPT_ID_AQUI",
+      #       "rootDir": "src"
+      #     }
+      #     JSON
+
+      - name: Push code to Apps Script
+        run: pnpm exec clasp push
+
+      - name: Create new version
+        run: pnpm exec clasp version "CI ${GITHUB_SHA}"
+
+      - name: Deploy Web App
+        run: pnpm exec clasp deploy --description "CI deploy ${GITHUB_SHA}"
+
+      - name: Show deployments (debug)
+        run: pnpm exec clasp deployments || true
