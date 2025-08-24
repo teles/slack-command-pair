@@ -1,0 +1,13 @@
+# Ignore comuns
+node_modules/**
+.git/**
+.github/**
+
+# Ignore tudo no rootDir (src)
+**
+
+# Mas inclua os arquivos necessários
+!appsscript.json
+!*.ts
+!*.gs
+!*.js

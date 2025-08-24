@@ -8,5 +8,5 @@
     "types": ["google-apps-script"],
     "baseUrl": "."
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/webapp.gs"]
 }
