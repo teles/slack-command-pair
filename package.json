@@ -4,13 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pnpm exec esbuild src/index.ts --bundle --format=iife --platform=browser --target=es2019 --outfile=dist/Code.js --legal-comments=none && cp appsscript.json dist/appsscript.json",
+    "push": "pnpm run build && pnpm exec clasp push",
+    "deploy": "pnpm run build && pnpm exec clasp version \"auto\" && pnpm exec clasp deploy --description \"deploy\"",
+    "open": "npx @google/clasp@2 open"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@google/clasp": "3.0.6-alpha",
-    "@types/google-apps-script": "^1.0.100"
+    "@types/google-apps-script": "^1.0.100",
+    "esbuild": "^0.25.9"
   }
 }

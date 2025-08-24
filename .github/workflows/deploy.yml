@@ -39,6 +39,9 @@ jobs:
           node -e "const fs=require('fs');const p=process.env.HOME+'/.clasprc.json';const s=fs.readFileSync(p,'utf8');JSON.parse(s);console.log('OK .clasprc.json');"
 
       # .clasp.json precisa estar commitado com scriptId + rootDir
+      - name: Build (esbuild → dist/)
+        run: pnpm run build
+
       - name: Push code to Apps Script
         run: pnpm exec clasp push
 

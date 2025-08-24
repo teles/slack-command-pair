@@ -8,6 +8,4 @@ node_modules/**
 
 # Mas inclua os arquivos necessários
 !appsscript.json
-!*.ts
-!*.gs
-!*.js
+!Code.js
