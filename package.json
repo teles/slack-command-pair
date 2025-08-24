@@ -8,7 +8,7 @@
     "push": "pnpm run build && pnpm exec clasp push",
     "deploy": "pnpm run build && pnpm exec clasp version \"auto\" && pnpm exec clasp deploy --description \"deploy\"",
     "open": "npx @google/clasp@2 open",
- "endpoint:prod": "echo https://script.google.com/macros/s/${GAS_DEPLOYMENT_ID_PROD}/exec",
+    "endpoint:prod": "echo https://script.google.com/macros/s/${GAS_DEPLOYMENT_ID_PROD}/exec",
     "endpoint:staging": "echo https://script.google.com/macros/s/${GAS_DEPLOYMENT_ID_STAGING}/exec"
   },
   "keywords": [],
