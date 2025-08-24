@@ -29,20 +29,17 @@ jobs:
         run: pnpm i --frozen-lockfile=false
 
       - name: Write Service Account key
-        run: echo "${{ secrets.GAS_SERVICE_ACCOUNT }}" > sa.json
+        shell: bash
+        run: |
+            cat > sa.json <<'JSON'
+            ${{ secrets.GAS_SERVICE_ACCOUNT }}
+            JSON
+
+      - name: Sanity check JSON
+        run: node -e "console.log(require('./sa.json').client_email)"
 
       - name: Login clasp (Service Account)
         run: pnpm exec clasp login --creds sa.json
-
-      # Se seu repo NÃO tem .clasp.json commitado, descomente o bloco abaixo
-      # - name: Create .clasp.json on the fly
-      #   run: |
-      #     cat > .clasp.json << 'JSON'
-      #     {
-      #       "scriptId": "SEU_SCRIPT_ID_AQUI",
-      #       "rootDir": "src"
-      #     }
-      #     JSON
 
       - name: Push code to Apps Script
         run: pnpm exec clasp push
