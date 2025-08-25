@@ -5,4 +5,5 @@ export interface Filters {
   page: number;
   pageSize: number;
   raw: string; // o texto original do comando, p/ exibir no header
+  sum?: boolean; // modo de soma - exibe totais em vez de lista
 }
