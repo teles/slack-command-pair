@@ -101,6 +101,16 @@ export function normEndOfDay(d?: Date): Date | undefined {
   return out;
 }
 
+export function getLastMonday(): Date {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = domingo, 1 = segunda, ..., 6 = sábado
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // se for domingo (0), voltar 6 dias
+  const lastMonday = new Date(today);
+  lastMonday.setDate(today.getDate() - daysToSubtract);
+  lastMonday.setHours(0, 0, 0, 0);
+  return lastMonday;
+}
+
 export function okJson(o: unknown): GoogleAppsScript.Content.TextOutput {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(
     ContentService.MimeType.JSON
