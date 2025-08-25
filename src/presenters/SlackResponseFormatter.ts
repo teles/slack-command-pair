@@ -4,19 +4,28 @@ import { ResponseFormatter } from "../interfaces/ResponseFormatter";
 import { SlackResponse } from "../interfaces/SlackInterfaces";
 import { SlackBlockBuilder } from "./SlackBlockBuilder";
 import { PaginationResult } from "../interfaces/PaginationResult";
+import { SummaryService } from "../services/SummaryService";
 import { MAX_BLOCKS, MAX_RESPONSE_SIZE } from "../config/constants";
 
 export class SlackResponseFormatter implements ResponseFormatter {
   private blockBuilder: SlackBlockBuilder;
+  private summaryService: SummaryService;
 
   constructor() {
     this.blockBuilder = new SlackBlockBuilder();
+    this.summaryService = new SummaryService();
   }
 
   formatResponse(
     pairingData: PaginationResult<PairRow>,
     filters: Filters
   ): SlackResponse {
+    // Se for modo suma, retornar resumo estatístico
+    if (filters.sum && filters.from && filters.to) {
+      return this.formatSummaryResponse(pairingData.data, filters);
+    }
+
+    // Modo normal - lista paginada
     const blocks = this.renderSlackBlocks(pairingData.data, filters);
 
     const payload: SlackResponse = {
@@ -39,6 +48,52 @@ export class SlackResponseFormatter implements ResponseFormatter {
         .join("\n\n");
       return { response_type: "ephemeral", text: textList };
     }
+    return payload;
+  }
+
+  private formatSummaryResponse(
+    pairs: PairRow[],
+    filters: Filters
+  ): SlackResponse {
+    const summary = this.summaryService.calculateSummary(
+      pairs,
+      filters.from!,
+      filters.to!
+    );
+
+    const blocks = this.blockBuilder.formatSummaryBlocks(summary);
+
+    const payload: SlackResponse = {
+      response_type: "ephemeral",
+      blocks,
+      attachments: [
+        {
+          color: "#36a64f", // Verde para indicar resumo
+          footer: `resumo: "${filters.raw || "—"}"`,
+        },
+      ],
+    };
+
+    const json = JSON.stringify(payload);
+    // fallback de segurança se estourar tamanho
+    if (json.length > MAX_RESPONSE_SIZE) {
+      const summaryText = [
+        `📊 Resumo de Pair Programming`,
+        `📅 ${summary.dateRange.from.toLocaleDateString(
+          "pt-BR"
+        )} até ${summary.dateRange.to.toLocaleDateString("pt-BR")}`,
+        `🎯 ${summary.totalSessions} sessões • ⏱️ ${summary.totalHours}`,
+        `👥 ${summary.uniqueParticipants.length} participantes únicos`,
+        ...summary.participantStats
+          .slice(0, 5)
+          .map(
+            (stat) => `• ${stat.name}: ${stat.sessions} sessões • ${stat.hours}`
+          ),
+      ].join("\n");
+
+      return { response_type: "ephemeral", text: summaryText };
+    }
+
     return payload;
   }
 
